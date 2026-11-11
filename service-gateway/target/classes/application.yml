@@ -1,0 +1,39 @@
+server:
+  port: 9000        # 以后所有请求都走 9000，8080/8081 只做内网服务
+
+spring:
+  application:
+    name: service-gateway
+
+  cloud:
+    nacos:
+      discovery:
+        server-addr: localhost:8848
+        username: nacos
+        password: nacos
+      config:
+        # 网关不从 Nacos 拉配置，关掉 spring-cloud-alibaba 的 import-check 强校验
+        import-check:
+          enabled: false
+
+    gateway:
+      routes:
+        - id: order-route
+          uri: lb://service-order     # lb = 从 Nacos 按服务名找实例
+          predicates:
+            - Path=/stationOrder/**        # 访问 9000/orders/** 就转给订单服务
+        - id: score-route
+          uri: lb://service-score
+          predicates:
+            - Path=/shopScore/**
+        - id: stationery-route
+          uri: lb://service-stationery
+          predicates:
+            - Path=/stationery/**
+
+  # 【关键】父 POM 的数据库依赖会被网关继承，不排除会因缺少数据源启动失败
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
+      - com.baomidou.mybatisplus.autoconfigure.MybatisPlusAutoConfiguration
+      - com.alibaba.druid.spring.boot3.autoconfigure.DruidDataSourceAutoConfigure

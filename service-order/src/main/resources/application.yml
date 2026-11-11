@@ -1,0 +1,47 @@
+server:
+  port: 8081            # 兜底，Nacos 里的优先级更高
+
+spring:
+  application:
+    name: service-order   # 必须是这个名字，决定去拉哪个 DataId
+
+  config:
+    import: nacos:service-order.yaml?group=DEFAULT_GROUP&refreshEnabled=true
+
+  cloud:
+    nacos:
+      # 配置中心的连接信息 —— 必须写本地，因为拉配置前程序还不知道 Nacos 在哪
+      config:
+        server-addr: localhost:8848
+        username: nacos
+        password: nacos
+        file-extension: yaml
+      # 注册中心的连接信息同样保留
+      discovery:
+        server-addr: localhost:8848
+        username: nacos
+        password: nacos
+
+    sentinel:
+      transport:
+
+        dashboard: localhost:8080
+      eager: true
+feign:
+  sentinel:
+    enabled: true
+seata:
+  enabled: true
+  application-id: ${spring.application.name}
+  tx-service-group: my-tx-group
+  registry: # 新增：从Nacos发现TC
+    type: nacos
+    nacos:
+      application: seata-server
+      server-addr: 127.0.0.1:8848
+      group: SEATA_GROUP
+      username: nacos
+      password: nacos
+  service:
+    vgroup-mapping:
+      my-tx-group: default         # 保留，值必须等于Server端的cluster
